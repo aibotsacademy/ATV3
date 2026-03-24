@@ -513,7 +513,10 @@ button { -webkit-tap-highlight-color: transparent; }
 
   <div style="padding:10px 12px;flex-shrink:0;background:rgba(7,24,40,.95);border-top:1px solid rgba(57,255,20,.15);position:relative;z-index:2;display:flex;flex-direction:column;gap:8px">
     <div style="display:flex;gap:10px">
+
+<div id="beacon-off-section-access"></div>
       <button class="hex-btn" style="flex:1;padding:13px;font-size:11px;border-color:var(--neon);color:var(--neon)" onclick="addAccessBadge()"><span>📛 ⬇ ESCANEAR INGRESO</span></button>
+      
     </div>
     <button class="hex-solid" id="access-done-btn" style="width:100%;padding:14px;font-size:13px;background:var(--neon);color:#001a00;box-shadow:var(--glow-neon)" onclick="finishAccessControlSigned()">✓ FINALIZAR CONTROL DE ACCESOS</button>
   </div>
@@ -738,6 +741,7 @@ button { -webkit-tap-highlight-color: transparent; }
   <div id="badge-body" style="flex:1;padding:16px;overflow-y:auto;position:relative;z-index:1"></div>
 
   <div style="padding:14px 16px;flex-shrink:0;background:rgba(7,24,40,.95);backdrop-filter:blur(20px);border-top:1px solid rgba(0,229,255,.15);position:relative;z-index:2;display:flex;flex-direction:column;gap:10px">
+<div id="beacon-off-section-insp"></div>
     <button class="hex-btn" style="width:100%;padding:13px;font-size:11px" onclick="addBadgePre()"><span>📛 ESCANEAR OTRA CREDENCIAL</span></button>
     <button class="hex-solid" id="badge-proceed-btn" style="width:100%;padding:17px;font-size:13px" disabled onclick="proceedToInspect()">⬡ INICIAR INSPECCIÓN</button>
   </div>
