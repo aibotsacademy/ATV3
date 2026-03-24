@@ -4147,7 +4147,7 @@ function addSignatureToDoneScreen() {
   });
 }
 
-  /* ═══════════════════════════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════════════════════════════════════
    AVSEC PRO — BEACON-OFF TIMING PATCH v1.0
    ─────────────────────────────────────────────────────────────────────────
    Agrega a las 3 operaciones (inspección, accesos, rampa):
@@ -4352,6 +4352,11 @@ async function registrarInicioOperacion() {
 // ─────────────────────────────────────────────────────────────────────────────
 const _origLogZone = logZoneToSheet;
 logZoneToSheet = async function(zoneId, zoneLabel, zoneData) {
+  // Guardar timestamp exacto en 24h en el objeto de zona para el correo
+  const tsAhora = Date.now();
+  if (state.zones && state.zones[zoneId]) {
+    state.zones[zoneId]._registeredAt = tsAhora;
+  }
   // Calcular tiempo desde beacon
   const secBeacon = secDesdeBeacon();
   const minBeacon = secBeacon !== null ? Math.floor(secBeacon / 60) : null;
@@ -4380,7 +4385,7 @@ logZoneToSheet = async function(zoneId, zoneLabel, zoneData) {
         zona:            zoneLabel,
         hallazgo:        zoneData.finding || "",
         nota:            zoneData.note    || "",
-        hora_zona:       zoneData.time    || "",
+        hora_zona:       (() => { const d = new Date(); return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0"); })(),
         fotos:           zoneData.photos ? zoneData.photos.length : 0,
         usuario:         user.username    || "",
         estatus:         "en_proceso",
@@ -4395,22 +4400,24 @@ logZoneToSheet = async function(zoneId, zoneLabel, zoneData) {
 
 const _origLogCP = logCheckpointToSheet;
 logCheckpointToSheet = async function(cpId, cpLabel, timestamp, hasPhoto) {
+  const now       = new Date();
   const secBeacon = secDesdeBeacon();
   const minBeacon = secBeacon !== null ? Math.floor(secBeacon / 60) : null;
 
-  // Duración desde el checkpoint anterior
-  let durDesdeAnterior = "";
-  if (beaconState.lastCpTime) {
-    const durMs = Date.now() - beaconState.lastCpTime.getTime();
-    durDesdeAnterior = formatDuracion(durMs);
-  }
-  beaconState.lastCpTime = new Date();
+  // Usar la duración pre-calculada en el checkpoint si existe
+  // (calculada en checkOnlyCP/acceptCvPhoto antes de que lastCpTime se actualice)
+  const cpData         = state.rampCheckpoints?.[cpId];
+  const durDesdeAnterior = cpData?._durDesdeAnteriorStr || "";
+
+  // Hora siempre en 24h desde _registeredAt del checkpoint
+  const hora24 = cpData?._registeredAt
+    ? (() => { const d = new Date(cpData._registeredAt); return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0"); })()
+    : `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
 
   const url  = getAppsScriptUrl();
   if (!url) return;
   const f    = state.currentFlight || {};
   const user = (()=>{ try{ return JSON.parse(localStorage.getItem("avsec_user")||"{}"); }catch(e){return{};} })();
-  const now  = new Date();
   const isCP2 = typeof CHECKPOINTS2 !== "undefined" && CHECKPOINTS2.some(c => c.id === cpId);
   try {
     await fetch(url, {
@@ -4422,14 +4429,14 @@ logCheckpointToSheet = async function(cpId, cpLabel, timestamp, hasPhoto) {
         hoja:                "checkpoints",
         timestamp:           now.toISOString(),
         fecha:               `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}/${now.getFullYear()}`,
-        hora:                `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`,
+        hora:                hora24,
         vuelo:               f.id      || "",
         aerolinea:           f.airline || "",
         gate:                f.gate    || "",
         grupo:               isCP2 ? "CP2-Bodega" : "CP1-Puente",
         cp_id:               cpId,
         checkpoint:          cpLabel,
-        hora_cp:             timestamp,
+        hora_cp:             hora24,
         tiene_foto:          hasPhoto ? "Si" : "No",
         usuario:             user.username || "",
         estatus:             "en_proceso",
@@ -4479,13 +4486,21 @@ function calcBeaconMetrics() {
       const secFromBeacon = cpTime
         ? Math.round((cpTime - tsBeacon) / 1000)
         : null;
+      // Calcular hora en 24h desde _registeredAt si está disponible
+      const cpHora24 = cpTime
+        ? (() => { const d = new Date(cpTime); return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0"); })()
+        : cpData.timestamp || "—";
+
       return {
-        id:             cp.id,
-        label:          cp.label,
-        grupo:          cp.id.startsWith("cp2") ? "CP2-Bodega" : "CP1-Puente",
-        hora:           cpData.timestamp || "—",
-        secDesdeBeacon: secFromBeacon,
-        durStr:         secFromBeacon !== null ? formatTimeFromSec(secFromBeacon) : "—",
+        id:               cp.id,
+        label:            cp.label,
+        grupo:            cp.id.startsWith("cp2") ? "CP2-Bodega" : "CP1-Puente",
+        hora:             cpHora24,
+        secDesdeBeacon:   secFromBeacon,
+        // durStr = tiempo TOTAL desde beacon (ej "04m 32s")
+        durStr:           secFromBeacon !== null ? formatTimeFromSec(secFromBeacon) : "—",
+        // durDesdeAnterior = tiempo entre este CP y el anterior (ej "01m 15s")
+        durDesdeAnterior: cpData._durDesdeAnteriorStr || "—",
       };
     });
 
@@ -4495,6 +4510,8 @@ function calcBeaconMetrics() {
     beaconIso:      beaconState.timestamp.toISOString(),
     durTotal:       formatDuracion(durTotalMs),
     durTotalMs,
+    // Función para obtener duración actualizada al momento de mostrar
+    getDurActual:   () => formatDuracion(Date.now() - tsBeacon),
     secDesdeBeacon: Math.round((now - tsBeacon) / 1000),
     cpMetrics,
     opId:           beaconState.opId,
@@ -4516,7 +4533,7 @@ function buildBeaconMetricsHTML(metrics) {
   const cpRows = metrics.cpMetrics.length > 0
     ? metrics.cpMetrics.map(cp => `
         <div style="display:flex;align-items:center;justify-content:space-between;
-          padding:8px 12px;border-bottom:1px solid rgba(0,229,255,.07);">
+          padding:9px 12px;border-bottom:1px solid rgba(0,229,255,.07);">
           <div style="flex:1;min-width:0;">
             <div style="font-family:var(--mono);font-size:8px;color:var(--dim);
               letter-spacing:.04em;">${cp.grupo}</div>
@@ -4524,10 +4541,17 @@ function buildBeaconMetricsHTML(metrics) {
               overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cp.label}</div>
           </div>
           <div style="text-align:right;flex-shrink:0;margin-left:10px;">
+            <!-- Hora en 24h -->
             <div style="font-family:var(--mono);font-size:9px;color:var(--cyan);">${cp.hora}</div>
+            <!-- Tiempo total desde beacon-off -->
             <div style="font-family:var(--mono);font-size:8px;color:var(--amber);">
-              +${cp.durStr} desde beacon
+              ⏱ ${cp.durStr} desde beacon
             </div>
+            <!-- Duración desde el checkpoint anterior -->
+            ${cp.durDesdeAnterior && cp.durDesdeAnterior !== "—" ? `
+            <div style="font-family:var(--mono);font-size:8px;color:var(--t3);">
+              ⟳ ${cp.durDesdeAnterior} desde anterior
+            </div>` : ""}
           </div>
         </div>`).join("")
     : `<div style="padding:10px 12px;font-family:var(--mono);font-size:9px;
@@ -4682,9 +4706,10 @@ if (_origEnviarCorreo) {
       tipo,
       vuelo:      f.id       || "",
       aerolinea:  f.airline  || "",
-      gate:       f.gate     || "",
-      dest:       f.dest     || "",
-      bridge:     f.bridge   || "",
+      gate:       f.gate     || "",   // gate ingreso
+      dest:       f.dest     || "",   // gate salida
+      arr:        f.arr      || "",   // # vuelo ingreso
+      dep:        f.dep      || "",   // # vuelo salida
       fecha:      `${String(now.getDate()).padStart(2,"0")}/${String(now.getMonth()+1).padStart(2,"0")}/${now.getFullYear()}`,
       hora:       `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`,
       oficial:    user.nombre || user.username || "",
@@ -4710,12 +4735,16 @@ if (_origEnviarCorreo) {
       // ── Zonas ────────────────────────────────────────────────────────────
       zonas: Object.entries(_zones||{}).map(([id, z]) => {
         const cpSec = metrics.cpMetrics.find(c => c.id === id)?.secDesdeBeacon || null;
+        // hora_zona siempre en 24h — z.time puede venir en AM/PM de t12()
+        const horaZona = z._registeredAt
+          ? (() => { const d = new Date(z._registeredAt); return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0"); })()
+          : "";
         return {
           id,
-          zona:            id,
-          hallazgo:        z.finding  || "",
-          nota:            z.note     || "",
-          hora_zona:       z.time     || "",
+          zona:             id,
+          hallazgo:         z.finding  || "",
+          nota:             z.note     || "",
+          hora_zona:        horaZona,
           seg_desde_beacon: cpSec,
           min_desde_beacon: cpSec !== null ? Math.floor(cpSec/60) : null,
         };
@@ -4723,22 +4752,28 @@ if (_origEnviarCorreo) {
 
       // ── Checkpoints ───────────────────────────────────────────────────────
       checkpoints: Object.entries(_rampCheckpoints||{}).map(([id, cp]) => {
-        const def     = allCPs.find(c => c.id === id);
-        const cpMet   = metrics.cpMetrics.find(c => c.id === id);
+        const def    = allCPs.find(c => c.id === id);
+        const cpMet  = metrics.cpMetrics.find(c => c.id === id);
+        // _registeredAt = ms timestamp → convertir a 24h HH:MM
+        const cpHora = cp._registeredAt
+          ? (() => { const d = new Date(cp._registeredAt); return String(d.getHours()).padStart(2,"0") + ":" + String(d.getMinutes()).padStart(2,"0"); })()
+          : (cpMet?.hora || "");
         return {
           id,
-          label:             def?.label    || id,
+          label:             def?.label || id,
           grupo:             id.startsWith("cp2") ? "CP2-Bodega" : "CP1-Puente",
-          hora:              cp.timestamp  || "",
-          hora_cp:           cp.timestamp  || "",
+          hora:              cpHora,
+          hora_cp:           cpHora,
           tieneFoto:         cp.photo ? "Si" : "No",
           seg_desde_beacon:  cpMet?.secDesdeBeacon || null,
           min_desde_beacon:  cpMet?.secDesdeBeacon !== null ? Math.floor(cpMet.secDesdeBeacon/60) : null,
-          durStr:            cpMet?.durStr  || "—",
+          durStr:            cpMet?.durStr              || "—",
+          dur_desde_anterior: cpMet?.durDesdeAnterior    || cp._durDesdeAnteriorStr || "—",
         };
       }),
 
       // ── Métricas de checkpoints para el email ─────────────────────────────
+      // metricas_checkpoints incluye: hora(24h), secDesdeBeacon, durStr, durDesdeAnterior
       metricas_checkpoints: metrics.cpMetrics,
     };
 
@@ -4765,10 +4800,24 @@ if (_origEnviarCorreo) {
 const _origCheckOnlyCP = typeof checkOnlyCP === "function" ? checkOnlyCP : null;
 if (_origCheckOnlyCP) {
   checkOnlyCP = function(cpId) {
+    // Capturar si ya existía (toggle off) o es nuevo (toggle on)
+    const yaExistia = !!(state.rampCheckpoints && state.rampCheckpoints[cpId]);
+    const tsAhora   = Date.now();
+
     _origCheckOnlyCP(cpId);
-    // Guardar timestamp exacto para métricas
-    if (state.rampCheckpoints && state.rampCheckpoints[cpId]) {
-      state.rampCheckpoints[cpId]._registeredAt = Date.now();
+
+    // Solo registrar métricas si se marcó (no si se desmarcó)
+    if (!yaExistia && state.rampCheckpoints && state.rampCheckpoints[cpId]) {
+      state.rampCheckpoints[cpId]._registeredAt = tsAhora;
+
+      // Calcular duración desde el checkpoint anterior para métricas
+      if (beaconState.lastCpTime) {
+        const durMs = tsAhora - beaconState.lastCpTime.getTime();
+        state.rampCheckpoints[cpId]._durDesdeAnteriorMs  = durMs;
+        state.rampCheckpoints[cpId]._durDesdeAnteriorStr = formatDuracion(durMs);
+      }
+      // Actualizar lastCpTime para el próximo checkpoint
+      beaconState.lastCpTime = new Date(tsAhora);
     }
   };
 }
@@ -4777,10 +4826,19 @@ if (_origCheckOnlyCP) {
 const _origAcceptCvPhoto = typeof acceptCvPhoto === "function" ? acceptCvPhoto : null;
 if (_origAcceptCvPhoto) {
   acceptCvPhoto = function() {
-    const cpId = cvState?.cpId;
+    const cpId    = cvState?.cpId;
+    const tsAhora = Date.now();
     _origAcceptCvPhoto();
     if (cpId && state.rampCheckpoints && state.rampCheckpoints[cpId]) {
-      state.rampCheckpoints[cpId]._registeredAt = Date.now();
+      state.rampCheckpoints[cpId]._registeredAt = tsAhora;
+
+      // Duración desde checkpoint anterior
+      if (beaconState.lastCpTime) {
+        const durMs = tsAhora - beaconState.lastCpTime.getTime();
+        state.rampCheckpoints[cpId]._durDesdeAnteriorMs  = durMs;
+        state.rampCheckpoints[cpId]._durDesdeAnteriorStr = formatDuracion(durMs);
+      }
+      beaconState.lastCpTime = new Date(tsAhora);
     }
   };
 }
