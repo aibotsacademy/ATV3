@@ -660,45 +660,36 @@ button { -webkit-tap-highlight-color: transparent; }
         <div id="flight-num-hint" style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-top:5px">Ingrese los dígitos del número de vuelo</div>
       </div>
 
+<!-- VUELO INGRESO -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:6px;letter-spacing:.06em">PUERTA / GATE</div>
-          <input id="flight-gate-input" type="text" placeholder="Ej: B12" maxlength="5"
-            style="width:100%;padding:10px 13px;background:rgba(7,24,40,.9);border:1px solid rgba(0,229,255,.2);border-radius:6px;color:var(--amber);font-family:var(--head);font-size:16px;font-weight:700;letter-spacing:.06em;outline:none"/>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:6px;letter-spacing:.06em">⬇ N° VUELO INGRESO</div>
+          <input id="flight-arr-num-input" type="text" placeholder="Ej: 101" maxlength="6"
+            style="width:100%;padding:10px 13px;background:rgba(7,24,40,.9);border:1px solid rgba(0,229,255,.2);border-radius:6px;color:var(--cyan);font-family:var(--head);font-size:16px;font-weight:700;letter-spacing:.06em;outline:none"
+            oninput="this.value=this.value.replace(/\D/g,'')"/>
         </div>
         <div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:6px;letter-spacing:.06em">HORA DEP.</div>
-          <input id="flight-dep-input" type="time"
-            style="width:100%;padding:10px 13px;background:rgba(7,24,40,.9);border:1px solid rgba(0,229,255,.2);border-radius:6px;color:var(--t2);font-family:var(--mono);font-size:14px;outline:none"/>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:6px;letter-spacing:.06em">⬇ GATE INGRESO</div>
+          <input id="flight-gate-arr-input" type="text" placeholder="Ej: B12" maxlength="5"
+            style="width:100%;padding:10px 13px;background:rgba(7,24,40,.9);border:1px solid rgba(0,229,255,.2);border-radius:6px;color:var(--cyan);font-family:var(--head);font-size:16px;font-weight:700;letter-spacing:.06em;outline:none"
+            oninput="this.value=this.value.toUpperCase()"/>
         </div>
       </div>
 
+      <!-- VUELO SALIDA -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:6px;letter-spacing:.06em">HORA LLEGADA</div>
-          <input id="flight-arr-input" type="time"
-            style="width:100%;padding:10px 13px;background:rgba(7,24,40,.9);border:1px solid rgba(0,229,255,.2);border-radius:6px;color:var(--t2);font-family:var(--mono);font-size:14px;outline:none"/>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:6px;letter-spacing:.06em">⬆ N° VUELO SALIDA</div>
+          <input id="flight-dep-num-input" type="text" placeholder="Ej: 102" maxlength="6"
+            style="width:100%;padding:10px 13px;background:rgba(7,24,40,.9);border:1px solid rgba(0,229,255,.2);border-radius:6px;color:var(--amber);font-family:var(--head);font-size:16px;font-weight:700;letter-spacing:.06em;outline:none"
+            oninput="this.value=this.value.replace(/\D/g,'')"/>
         </div>
         <div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:6px;letter-spacing:.06em">PUENTE / MANGA</div>
-          <select id="flight-bridge-input"
-            style="width:100%;padding:10px 13px;background:rgba(7,24,40,.9);border:1px solid rgba(0,229,255,.2);border-radius:6px;color:var(--t1);font-family:var(--mono);font-size:13px;outline:none">
-            <option value="">Seleccionar</option>
-            <option value="P1">Puente 1</option>
-            <option value="P2">Puente 2</option>
-            <option value="P3">Puente 3</option>
-            <option value="P4">Puente 4</option>
-            <option value="P5">Puente 5</option>
-            <option value="remoto">Remoto (sin puente)</option>
-          </select>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:6px;letter-spacing:.06em">⬆ GATE SALIDA</div>
+          <input id="flight-gate-dep-input" type="text" placeholder="Ej: B14" maxlength="5"
+            style="width:100%;padding:10px 13px;background:rgba(7,24,40,.9);border:1px solid rgba(0,229,255,.2);border-radius:6px;color:var(--amber);font-family:var(--head);font-size:16px;font-weight:700;letter-spacing:.06em;outline:none"
+            oninput="this.value=this.value.toUpperCase()"/>
         </div>
-      </div>
-
-      <div>
-        <div style="font-family:var(--mono);font-size:9px;color:var(--dim);margin-bottom:6px;letter-spacing:.06em">DESTINO (IATA)</div>
-        <input id="flight-dest-input" type="text" placeholder="Ej: MIA, PTY, BOG" maxlength="4"
-          style="width:100%;padding:10px 13px;background:rgba(7,24,40,.9);border:1px solid rgba(0,229,255,.2);border-radius:6px;color:var(--t1);font-family:var(--mono);font-size:14px;letter-spacing:.08em;outline:none"
-          oninput="this.value=this.value.toUpperCase()"/>
       </div>
 
       <div id="flight-confirm-error" style="display:none;padding:8px 12px;background:rgba(255,23,68,.08);border:1px solid rgba(255,23,68,.3);border-radius:6px;font-family:var(--mono);font-size:10px;color:var(--red)"></div>
