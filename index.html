@@ -511,15 +511,14 @@ button { -webkit-tap-highlight-color: transparent; }
     <div id="checkpoint-grid" style="display:flex;flex-direction:column;gap:10px"></div>
   </div>
 
-  <div style="padding:10px 12px;flex-shrink:0;background:rgba(7,24,40,.95);border-top:1px solid rgba(57,255,20,.15);position:relative;z-index:2;display:flex;flex-direction:column;gap:8px">
+<div style="padding:10px 12px;flex-shrink:0;background:rgba(7,24,40,.95);border-top:1px solid rgba(57,255,20,.15);position:relative;z-index:2;display:flex;flex-direction:column;gap:8px">
+    <div id="beacon-off-section-access"></div>
     <div style="display:flex;gap:10px">
-
-<div id="beacon-off-section-access"></div>
       <button class="hex-btn" style="flex:1;padding:13px;font-size:11px;border-color:var(--neon);color:var(--neon)" onclick="addAccessBadge()"><span>📛 ⬇ ESCANEAR INGRESO</span></button>
-      
     </div>
     <button class="hex-solid" id="access-done-btn" style="width:100%;padding:14px;font-size:13px;background:var(--neon);color:#001a00;box-shadow:var(--glow-neon)" onclick="finishAccessControlSigned()">✓ FINALIZAR CONTROL DE ACCESOS</button>
   </div>
+
 </div>
 
 <!-- ═══════════════════════════════════════════════
@@ -573,11 +572,14 @@ button { -webkit-tap-highlight-color: transparent; }
     <div id="checkpoint2-grid" style="display:flex;flex-direction:column;gap:8px"></div>
   </div>
 
-  <div style="padding:10px 12px;flex-shrink:0;background:rgba(7,24,40,.95);border-top:1px solid rgba(255,179,0,.15);position:relative;z-index:2;display:flex;gap:8px">
-<div id="beacon-off-section-ramp"></div>
-    <button class="hex-btn" style="flex:1;padding:12px;font-size:10px;border-color:var(--amber);color:var(--amber)" onclick="addRampBadge()"><span>📛 ⬇ + INGRESO</span></button>
-    <button class="hex-solid" style="flex:2;padding:14px;font-size:12px;background:var(--amber);color:#1a0f00;box-shadow:var(--glow-amber)" onclick="finishRampSigned()">✓ CERRAR RAMPA</button>
+<div style="padding:10px 12px;flex-shrink:0;background:rgba(7,24,40,.95);border-top:1px solid rgba(255,179,0,.15);position:relative;z-index:2;display:flex;flex-direction:column;gap:8px">
+    <div id="beacon-off-section-ramp"></div>
+    <div style="display:flex;gap:8px">
+      <button class="hex-btn" style="flex:1;padding:12px;font-size:10px;border-color:var(--amber);color:var(--amber)" onclick="addRampBadge()"><span>📛 ⬇ + INGRESO</span></button>
+      <button class="hex-solid" style="flex:2;padding:14px;font-size:12px;background:var(--amber);color:#1a0f00;box-shadow:var(--glow-amber)" onclick="finishRampSigned()">✓ CERRAR RAMPA</button>
+    </div>
   </div>
+
 </div>
 
 <!-- ═══════════════════════════════════════════════
@@ -1934,15 +1936,13 @@ function onFlightNumInput(inp) {
 function confirmFlight() {
   if (!_selectedAirline) return;
   const num  = ($("flight-number-input")?.value||"").trim();
-  const gate   = ($("flight-gate-input")?.value||"").toUpperCase().trim();
-  const dep    = $("flight-dep-input")?.value||"";
-  const arr    = $("flight-arr-input")?.value||"";
-  const bridge = $("flight-bridge-input")?.value||"";
-  const dest   = ($("flight-dest-input")?.value||"").toUpperCase().trim();
-  if (!num) {
-    showFlightError("Ingrese el número de vuelo.");
-    return;
-  }
+const gate    = ($("flight-gate-arr-input")?.value||"").toUpperCase().trim();
+  const dep     = ($("flight-dep-num-input")?.value||"").trim();
+  const arr     = ($("flight-arr-num-input")?.value||"").trim();
+  const bridge  = "";
+  const dest    = ($("flight-gate-dep-input")?.value||"").toUpperCase().trim();
+  const gateArr = gate;
+  const gateDep = dest; // gate salida reutiliza campo dest
   const flightId = `${_selectedAirline.iata||_selectedAirline.code}${num}`;
   const now = new Date();
   const f = {
